@@ -1,0 +1,591 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dictionary</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #faf8f3;
+        --surface: #ffffff;
+        --border: #e8e2d9;
+        --text: #1a1814;
+        --muted: #8a8278;
+        --accent: #2d5a3d;
+        --tag-bg: #edf3ef;
+        --tag-text: #2d5a3d;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: "DM Sans", sans-serif;
+        min-height: 100vh;
+      }
+
+      /* ── Header ───────────────────────────────── */
+      header {
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        padding: 1.5rem 2rem;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .header-top {
+        display: flex;
+        align-items: baseline;
+        gap: 1rem;
+      }
+
+      h1 {
+        font-family: "Lora", serif;
+        font-size: 1.6rem;
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      .subtitle {
+        font-size: 0.8rem;
+        color: var(--muted);
+        letter-spacing: 0.05em;
+      }
+
+      /* ── Search ───────────────────────────────── */
+      .search-wrap {
+        position: relative;
+        max-width: 520px;
+      }
+
+      #search {
+        width: 100%;
+        padding: 10px 16px 10px 40px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--bg);
+        font-family: "DM Sans", sans-serif;
+        font-size: 0.95rem;
+        color: var(--text);
+        outline: none;
+        transition: border-color 0.2s;
+      }
+      #search:focus {
+        border-color: var(--accent);
+      }
+      #search::placeholder {
+        color: var(--muted);
+      }
+
+      .search-icon {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--muted);
+        font-size: 16px;
+        pointer-events: none;
+      }
+
+      /* ── Live result banner ───────────────────── */
+      #live-result {
+        max-width: 720px;
+        margin: 1.5rem auto;
+        padding: 0 2rem;
+        display: none;
+      }
+
+      .live-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--accent);
+        border-radius: 10px;
+        padding: 1.25rem 1.5rem;
+      }
+
+      .live-card .word-title {
+        font-family: "Lora", serif;
+        font-size: 1.4rem;
+        font-weight: 600;
+      }
+
+      .live-card .phonetic {
+        font-family: "Lora", serif;
+        font-style: italic;
+        color: var(--muted);
+        font-size: 0.9rem;
+        margin-top: 2px;
+      }
+
+      .live-card .pos-tag {
+        display: inline-block;
+        background: var(--tag-bg);
+        color: var(--tag-text);
+        font-size: 0.72rem;
+        padding: 2px 10px;
+        border-radius: 20px;
+        margin: 10px 0 6px;
+        font-weight: 500;
+        letter-spacing: 0.04em;
+      }
+
+      .live-card .defn {
+        font-size: 0.9rem;
+        line-height: 1.6;
+        margin-bottom: 4px;
+      }
+      .live-card .example {
+        font-size: 0.82rem;
+        color: var(--muted);
+        font-style: italic;
+        margin-bottom: 8px;
+      }
+      .live-card .synonyms {
+        font-size: 0.8rem;
+        color: var(--muted);
+        margin-top: 8px;
+      }
+      .live-card .synonyms strong {
+        color: var(--text);
+      }
+
+      .error-msg {
+        font-size: 0.9rem;
+        color: #b94a4a;
+        padding: 0.75rem 1rem;
+        background: #fdf0f0;
+        border: 1px solid #f0d0d0;
+        border-radius: 8px;
+      }
+
+      .loading {
+        font-size: 0.85rem;
+        color: var(--muted);
+        padding: 0.75rem 0;
+      }
+
+      /* ── Main grid ────────────────────────────── */
+      main {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
+
+      .section-label {
+        font-size: 0.72rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 1rem;
+      }
+
+      #word-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1rem;
+      }
+
+      /* ── Word card ────────────────────────────── */
+      .word-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 1.1rem 1.25rem;
+        transition: border-color 0.2s;
+        cursor: default;
+      }
+      .word-card:hover {
+        border-color: #c8c0b4;
+      }
+
+      .word-card .word {
+        font-family: "Lora", serif;
+        font-size: 1.05rem;
+        font-weight: 600;
+        margin-bottom: 2px;
+      }
+
+      .word-card .phonetic {
+        font-family: "Lora", serif;
+        font-style: italic;
+        font-size: 0.78rem;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+
+      .word-card .pos {
+        display: inline-block;
+        background: var(--tag-bg);
+        color: var(--tag-text);
+        font-size: 0.68rem;
+        padding: 1px 8px;
+        border-radius: 20px;
+        margin-bottom: 6px;
+        font-weight: 500;
+      }
+
+      .word-card .meaning {
+        font-size: 0.83rem;
+        line-height: 1.55;
+        color: #3a3530;
+      }
+
+      .word-card .eg {
+        font-size: 0.76rem;
+        color: var(--muted);
+        font-style: italic;
+        margin-top: 5px;
+      }
+
+      .word-card.hidden {
+        display: none;
+      }
+
+      #no-results {
+        font-size: 0.9rem;
+        color: var(--muted);
+        padding: 1rem 0;
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="header-top">
+        <h1>Dictionary</h1>
+        <span class="subtitle">100 curated words + live search</span>
+      </div>
+      <div class="search-wrap">
+        <span class="search-icon">&#9906;</span>
+        <input
+          type="text"
+          id="search"
+          placeholder="Search a word or look up any new word..."
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
+    </header>
+
+    <div id="live-result"></div>
+
+    <main>
+      <div class="section-label" id="grid-label">All words — A to Z</div>
+      <div id="no-results">No matching words found in the preloaded list.</div>
+      <div id="word-grid"></div>
+    </main>
+
+    <script>
+      const WORDS = [
+        "aberration",
+        "ambiguous",
+        "analogy",
+        "anecdote",
+        "antagonist",
+        "apathy",
+        "articulate",
+        "astute",
+        "benevolent",
+        "brevity",
+        "candid",
+        "catalyst",
+        "coherent",
+        "compassion",
+        "concise",
+        "condescending",
+        "connotation",
+        "contemplate",
+        "context",
+        "contradiction",
+        "credible",
+        "criteria",
+        "critique",
+        "cynical",
+        "deduce",
+        "deliberate",
+        "diligent",
+        "discrepancy",
+        "disdain",
+        "eloquent",
+        "empathy",
+        "enigma",
+        "ephemeral",
+        "ethics",
+        "euphemism",
+        "facade",
+        "fallacy",
+        "foreshadow",
+        "frugal",
+        "fundamental",
+        "haphazard",
+        "hypothesis",
+        "ideology",
+        "illuminate",
+        "implicit",
+        "inference",
+        "integrity",
+        "irony",
+        "juxtapose",
+        "latent",
+        "legitimate",
+        "lucid",
+        "melancholy",
+        "metaphor",
+        "meticulous",
+        "morale",
+        "narrative",
+        "neutral",
+        "objective",
+        "obsolete",
+        "ominous",
+        "opportunist",
+        "optimism",
+        "paradox",
+        "perspective",
+        "pessimism",
+        "pragmatic",
+        "precedent",
+        "profound",
+        "prolific",
+        "propaganda",
+        "rational",
+        "relevant",
+        "resilient",
+        "rhetoric",
+        "scrutinize",
+        "serendipity",
+        "skeptical",
+        "sophisticated",
+        "subjective",
+        "subtle",
+        "superficial",
+        "tangible",
+        "tenacious",
+        "transparent",
+        "trivial",
+        "unanimous",
+        "vague",
+        "validate",
+        "versatile",
+        "viable",
+        "vindicate",
+        "virtue",
+        "volatile",
+        "zealous",
+      ];
+
+      const API = "https://api.dictionaryapi.dev/api/v2/entries/en/";
+      const grid = document.getElementById("word-grid");
+      const liveResult = document.getElementById("live-result");
+      const noResults = document.getElementById("no-results");
+      const gridLabel = document.getElementById("grid-label");
+      const cache = {};
+      let debounceTimer;
+
+      async function fetchWord(word) {
+        if (cache[word]) return cache[word];
+        try {
+          const res = await fetch(API + word.toLowerCase());
+          if (!res.ok) return null;
+          const data = await res.json();
+          cache[word] = data;
+          return data;
+        } catch {
+          return null;
+        }
+      }
+
+      function renderCard(data) {
+        const entry = data[0];
+        const word = entry.word || "";
+        const phonetic = entry.phonetic || "";
+        const meaning = entry.meanings?.[0] || {};
+        const pos = meaning.partOfSpeech || "";
+        const def = meaning.definitions?.[0] || {};
+        const defText = def.definition || "";
+        const example = def.example || "";
+
+        const card = document.createElement("div");
+        card.className = "word-card";
+        card.dataset.word = word.toLowerCase();
+        card.innerHTML = `
+    <div class="word">${word}</div>
+    ${phonetic ? `<div class="phonetic">${phonetic}</div>` : ""}
+    ${pos ? `<span class="pos">${pos}</span>` : ""}
+    <div class="meaning">${defText}</div>
+    ${example ? `<div class="eg">"${example}"</div>` : ""}
+  `;
+        return card;
+      }
+
+      function renderLiveCard(data) {
+        const entry = data[0];
+        const word = entry.word || "";
+        const phonetic = entry.phonetic || "";
+        let html = `<div class="live-card">
+    <div class="word-title">${word}</div>
+    ${phonetic ? `<div class="phonetic">${phonetic}</div>` : ""}`;
+
+        for (const meaning of entry.meanings || []) {
+          const pos = meaning.partOfSpeech || "";
+          html += `<div class="pos-tag">${pos}</div>`;
+          for (const def of (meaning.definitions || []).slice(0, 2)) {
+            html += `<div class="defn">${def.definition}</div>`;
+            if (def.example)
+              html += `<div class="example">"${def.example}"</div>`;
+          }
+        }
+
+        const synonyms = [];
+        for (const m of entry.meanings || [])
+          synonyms.push(...(m.synonyms || []).slice(0, 3));
+        if (synonyms.length)
+          html += `<div class="synonyms"><strong>Synonyms:</strong> ${synonyms.slice(0, 5).join(", ")}</div>`;
+
+        html += `</div>`;
+        return html;
+      }
+
+      async function loadAllWords() {
+        const fragment = document.createDocumentFragment();
+        await Promise.all(
+          WORDS.map(async (word) => {
+            const data = await fetchWord(word);
+            if (data) fragment.appendChild(renderCard(data));
+          }),
+        );
+        grid.appendChild(fragment);
+      }
+
+      function similarity(a, b) {
+        const longer = a.length > b.length ? a : b;
+        const shorter = a.length > b.length ? b : a;
+        if (longer.length === 0) return 1.0;
+        let matches = 0;
+        for (let i = 0; i < shorter.length; i++) {
+          if (longer.includes(shorter[i])) matches++;
+        }
+        const editDist = (s, t) => {
+          const dp = Array.from({ length: s.length + 1 }, (_, i) =>
+            Array.from({ length: t.length + 1 }, (_, j) =>
+              i === 0 ? j : j === 0 ? i : 0,
+            ),
+          );
+          for (let i = 1; i <= s.length; i++)
+            for (let j = 1; j <= t.length; j++)
+              dp[i][j] =
+                s[i - 1] === t[j - 1]
+                  ? dp[i - 1][j - 1]
+                  : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+          return dp[s.length][t.length];
+        };
+        const dist = editDist(a, b);
+        return 1 - dist / longer.length;
+      }
+
+      function findClosestWord(query) {
+        let best = null,
+          bestScore = 0;
+        for (const word of WORDS) {
+          const score = similarity(query, word);
+          if (score > bestScore) {
+            bestScore = score;
+            best = word;
+          }
+        }
+        return bestScore >= 0.5 ? best : null;
+      }
+
+      async function handleSearch(query) {
+        const q = query.trim().toLowerCase();
+
+        const cards = grid.querySelectorAll(".word-card");
+        let visibleCount = 0;
+
+        if (!q) {
+          liveResult.style.display = "none";
+          cards.forEach((c) => c.classList.remove("hidden"));
+          noResults.style.display = "none";
+          gridLabel.textContent = "All words — A to Z";
+          return;
+        }
+
+        cards.forEach((c) => {
+          const match = c.dataset.word.includes(q);
+          c.classList.toggle("hidden", !match);
+          if (match) visibleCount++;
+        });
+
+        if (visibleCount > 0) {
+          liveResult.style.display = "none";
+          noResults.style.display = "none";
+          gridLabel.textContent = `Showing ${visibleCount} result${visibleCount !== 1 ? "s" : ""} for "${q}"`;
+        } else {
+          gridLabel.textContent = `No preloaded matches — searching online for "${q}"...`;
+          noResults.style.display = "none";
+          liveResult.style.display = "block";
+          liveResult.innerHTML = `<div class="loading">Looking up "${q}"...</div>`;
+
+          const data = await fetchWord(q);
+          if (data) {
+            liveResult.innerHTML = renderLiveCard(data);
+            gridLabel.textContent = `Live result for "${q}"`;
+          } else {
+            const suggestion = findClosestWord(q);
+            if (suggestion) {
+              liveResult.innerHTML = `
+          <div class="live-card" style="border-left-color: #b97a2a;">
+            <div style="font-size:0.85rem; color: #8a6a30; margin-bottom:10px;">
+              Did you mean <strong style="color:#5a3e10;">"${suggestion}"</strong>?
+            </div>
+            <div id="suggestion-result"><div class="loading">Fetching "${suggestion}"...</div></div>
+          </div>`;
+              gridLabel.textContent = `Showing closest match for "${q}"`;
+              const suggData = await fetchWord(suggestion);
+              const suggEl = document.getElementById("suggestion-result");
+              if (suggEl && suggData) {
+                const entry = suggData[0];
+                const phonetic = entry.phonetic || "";
+                const meaning = entry.meanings?.[0] || {};
+                const pos = meaning.partOfSpeech || "";
+                const def = meaning.definitions?.[0] || {};
+                suggEl.innerHTML = `
+            <div class="word-title">${entry.word}</div>
+            ${phonetic ? `<div class="phonetic">${phonetic}</div>` : ""}
+            ${pos ? `<div class="pos-tag">${pos}</div>` : ""}
+            <div class="defn">${def.definition || ""}</div>
+            ${def.example ? `<div class="example">"${def.example}"</div>` : ""}
+          `;
+              }
+            } else {
+              liveResult.innerHTML = `<div class="error-msg">Word "<strong>${q}</strong>" not found. Check the spelling and try again.</div>`;
+              gridLabel.textContent = `No results for "${q}"`;
+            }
+          }
+        }
+      }
+
+      document.getElementById("search").addEventListener("input", (e) => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => handleSearch(e.target.value), 400);
+      });
+
+      loadAllWords();
+    </script>
+  </body>
+</html>
